@@ -2,7 +2,7 @@ import functools
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
-from statistics import median_low
+from typing import Any, List
 
 
 class TreeNode:
@@ -48,9 +48,6 @@ def _edges_comp(e1, e2):
 
 
 def balance_w(node):
-    if node is None:
-        raise Exception("Exception in balance_w")
-
     def get_w(n): return 0 if (n is None) else n.w
     if type(node.data) is tuple:
         node.w = get_w(node.left) + get_w(node.right)
@@ -82,7 +79,7 @@ def _balance(u):
     # balance e(r-1) t(r) e(r) balance
     # ..r-2]   r-1    r    r+1  [r+2..
     #    0      1     2     3     4
-    seq = [None]*5
+    seq: List[Any] = [None]*5
     if r > 1:
         seq[0] = _balance(u[:r-1])
     if r > 0:
@@ -119,36 +116,60 @@ def _balance(u):
 def _trapezoid(g, e, v, i):
     if not v:
         return None
-    y_med = median_low([g.nodes[i][1] for i in v])
-    e_i, v_i, u_i = [[], []], [[], []], [[], []]
+    y_med = g.nodes(True)[v[(len(v) - 1) // 2]][1]
     i_i = [[min(i), y_med], [y_med, max(i)]]
+
+    t = 0
+    v_t_indices = {}
+    v_i = [[], []]
     for curr_e in e:
         coord_0 = g.nodes[curr_e[0]]
         coord_1 = g.nodes[curr_e[1]]
         for i in range(2):
-            flag = False
             if i_i[i][0] < coord_0[1] < i_i[i][1]:
-                flag = True
                 v_i[i].append(curr_e[0])
             if i_i[i][0] < coord_1[1] < i_i[i][1]:
-                flag = True
                 v_i[i].append(curr_e[1])
-            if flag:
+
+            if coord_0[1] <= i_i[i][0] and coord_1[1] >= i_i[i][1]:
+                for v in v_i[i]:
+                    v_t_indices[v] = t
+                v_i[i] = []
+                t += 1
+    for i in range(2):
+        for v in v_i[i]:
+            v_t_indices[v] = t
+        v_i[i] = []
+        t += 1
+
+    v_t: List[List[int]] = [[] for _ in range(t)]
+    for i, v_index in v_t_indices.items():
+        v_t[v_index].append(i)
+
+    t = 0
+    e_i, u_i = [[], []], [[], []]
+    for curr_e in e:
+        coord_0 = g.nodes[curr_e[0]]
+        coord_1 = g.nodes[curr_e[1]]
+        for i in range(2):
+            if i_i[i][0] < coord_0[1] < i_i[i][1] or i_i[i][0] < coord_1[1] < i_i[i][1]:
                 e_i[i].append(curr_e)
 
             if coord_0[1] <= i_i[i][0] and coord_1[1] >= i_i[i][1]:
-                tmp = _trapezoid(g, e_i[i], set(v_i[i]), i_i[i])
+                tmp = _trapezoid(g, e_i[i], v_t[t], i_i[i])
                 if tmp is not None:
                     u_i[i].append(tmp)
                 node = TreeNode()
                 node.w = 0
                 node.data = curr_e
                 u_i[i].append(node)
-                e_i[i], v_i[i] = [], []
+                e_i[i] = []
+                t += 1
     for i in range(2):
-        tmp = _trapezoid(g, e_i[i], set(v_i[i]), i_i[i])
+        tmp = _trapezoid(g, e_i[i], v_t[t], i_i[i])
         if tmp is not None:
             u_i[i].append(tmp)
+        t += 1
     node = TreeNode()
     node.left = _balance(u_i[0])
     node.right = _balance(u_i[1])
@@ -158,6 +179,9 @@ def _trapezoid(g, e, v, i):
 
 
 def preprocessing(vertices_coords, edges_list, visualize=False):
+    vertices_indices = list(range(len(vertices_coords)))
+    vertices_indices.sort(key=lambda x: vertices_coords[x][1])
+
     edges_list = [tuple(sorted(list(e), key=lambda p: vertices_coords[p][1])) for e in edges_list]
     edges_list_t = [(e, (vertices_coords[e[0]], vertices_coords[e[1]])) for e in edges_list]
     edges_list_t = sorted(edges_list_t, key=functools.cmp_to_key(_edges_comp))
@@ -172,7 +196,7 @@ def preprocessing(vertices_coords, edges_list, visualize=False):
         _show_plot(graph)
 
     i_0 = [min(vertices_coords, key=lambda x: x[1])[1], max(vertices_coords, key=lambda x: x[1])[1]]
-    tree = _trapezoid(graph, edges_list, graph.nodes, i_0)
+    tree = _trapezoid(graph, edges_list, vertices_indices, i_0)
     return graph, tree
 
 
