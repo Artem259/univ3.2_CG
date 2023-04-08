@@ -15,3 +15,4 @@ if __name__ == '__main__':
     graph, tree = pl.preprocessing(vertices_coords, edges_list)
     loc = pl.point_localization(graph, tree, point, visualize=True)
     print(*loc, sep="\n")
+    ...

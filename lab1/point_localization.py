@@ -23,6 +23,7 @@ def _show_plot(graph, point=None):
     ax.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
     if point is not None:
         plt.scatter(point[0], point[1], color="red")
+    plt.ion()
     plt.show()
 
 
@@ -30,7 +31,7 @@ def _calculate_x(p1, p2, y):
     return -((p2[0]-p1[0]) * (p2[1]-y) / (p2[1]-p1[1]) - p2[0])
 
 
-def point_to_line(point, p1, p2):
+def _point_to_line_location(point, p1, p2):
     return -np.sign((p2[0] - p1[0]) * (point[1] - p1[1]) - (p2[1] - p1[1]) * (point[0] - p1[0]))
 
 
@@ -47,7 +48,7 @@ def _edges_comp(e1, e2):
     return -1 if x1 < x2 else 1
 
 
-def balance_w(node):
+def _balance_w(node):
     def get_w(n): return 0 if (n is None) else n.w
     if type(node.data) is tuple:
         node.w = get_w(node.left) + get_w(node.right)
@@ -55,20 +56,20 @@ def balance_w(node):
         node.w = get_w(node.left) + get_w(node.right) + 1
 
 
-def create_balanced_tree(u):
+def _create_balanced_tree(u):
     if not u:
         return None
     mid = len(u) // 2
-    u[mid].left = create_balanced_tree(u[:mid])
-    u[mid].right = create_balanced_tree(u[mid+1:])
-    balance_w(u[mid])
+    u[mid].left = _create_balanced_tree(u[:mid])
+    u[mid].right = _create_balanced_tree(u[mid + 1:])
+    _balance_w(u[mid])
     return u[mid]
 
 
 def _balance(u):
     w_u = sum(i.w for i in u)
     if w_u == 0:
-        return create_balanced_tree(u)
+        return _create_balanced_tree(u)
     curr_sum = 0
     r = 0
     for curr_u in u:
@@ -104,12 +105,12 @@ def _balance(u):
         tmp = seq[3]
         tmp.left = seq[2]
         tmp.right = seq[4]
-        balance_w(tmp)
+        _balance_w(tmp)
         # ---
         root = seq[1]
         root.left = seq[0]
         root.right = tmp
-    balance_w(root)
+    _balance_w(root)
     return root
 
 
@@ -174,7 +175,7 @@ def _trapezoid(g, e, v, i):
     node.left = _balance(u_i[0])
     node.right = _balance(u_i[1])
     node.data = next(x[0] for x in g.nodes(True) if x[1][1] == y_med)
-    balance_w(node)
+    _balance_w(node)
     return node
 
 
@@ -210,7 +211,7 @@ def point_localization(graph, tree, point, visualize=False):
         if type(data) is tuple:
             p1 = graph.nodes[data[0]]
             p2 = graph.nodes[data[1]]
-            pos = point_to_line(point, p1, p2)
+            pos = _point_to_line_location(point, p1, p2)
             if pos == -1:
                 d = "left"
                 node = node.left
