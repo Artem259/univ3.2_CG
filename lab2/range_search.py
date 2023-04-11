@@ -37,6 +37,22 @@ def _show_plot(points, x_range, y_range):
     plt.show()
 
 
+def _sorted_list_split(left_list, right_list, to_split_list):
+    if not to_split_list:
+        return [], []
+    sep_flags = [2] * (max(to_split_list) + 1)
+    for p in left_list:
+        sep_flags[p] = 0
+    for p in right_list:
+        if sep_flags[p] != 2:
+            raise Exception("_sorted_list_split")
+        sep_flags[p] = 1
+    split = [[], [], []]
+    for p in to_split_list:
+        split[sep_flags[p]].append(p)
+    return split[0], split[1]
+
+
 def _m(node):
     return node.point[node.line_dim]
 
@@ -51,28 +67,23 @@ def _preprocessing(points, dim_points, non_dim_points, dim):
     m_index = (len(dim_points) - 1) // 2
     m = dim_points[m_index]
 
-    sep_flags = [1] * len(points)
-    for p in dim_points[:m_index]:
-        sep_flags[p] = 0
-    sep_points = [[], []]
-    for p in non_dim_points:
-        if p == m:
-            continue
-        sep_points[sep_flags[p]].append(p)
+    left_dim_points, right_dim_points = dim_points[:m_index], dim_points[m_index + 1:]
+    left_non_dim_points, right_non_dim_points = _sorted_list_split(left_dim_points, right_dim_points, non_dim_points)
+    next_dim = Dim.HORIZONTAL if dim == Dim.VERTICAL else Dim.VERTICAL
 
     node = TreeNode()
     node.point_index = m
     node.point = points[m]
     node.line_dim = dim
-    node.left = _preprocessing(points, sep_points[0], dim_points[:m_index], (dim + 1) % 2)
-    node.right = _preprocessing(points, sep_points[1], dim_points[m_index + 1:], (dim + 1) % 2)
+    node.left = _preprocessing(points, left_non_dim_points, left_dim_points, next_dim)
+    node.right = _preprocessing(points, right_non_dim_points, right_dim_points, next_dim)
     return node
 
 
 def preprocessing(points):
     x = y = list(range(len(points)))
-    x.sort(key=lambda i: points[i][0])
-    y.sort(key=lambda i: points[i][1])
+    x = sorted(x, key=lambda i: points[i][0])
+    y = sorted(y, key=lambda i: points[i][1])
     return _preprocessing(points, x, y, Dim.VERTICAL)
 
 
