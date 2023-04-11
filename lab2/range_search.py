@@ -71,8 +71,8 @@ def _preprocessing(points, dim_points, non_dim_points, dim):
 
 def preprocessing(points):
     x = y = list(range(len(points)))
-    x = sorted(x, key=lambda i: points[i][0])
-    y = sorted(y, key=lambda i: points[i][1])
+    x.sort(key=lambda i: points[i][0])
+    y.sort(key=lambda i: points[i][1])
     return _preprocessing(points, x, y, Dim.VERTICAL)
 
 
