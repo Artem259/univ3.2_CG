@@ -75,7 +75,11 @@ public class ConvexHull extends ConvexHullHalf {
         plotFrame.getContentPane().removeAll();
         plotFrame.getContentPane().repaint();
         plotFrame.getContentPane().setPreferredSize(new Dimension(sizeX, sizeY));
-        plotFrame.setLocation(xPos, yPos);
+        if (!points.isEmpty()) {
+            plotFrame.setLocation(xPos + ((int) (minX*Plot.sizeFactor())), yPos + ((int) (minY*Plot.sizeFactor())));
+        } else {
+            plotFrame.setLocation(xPos, yPos);
+        }
         ArrayList<Coordinate2D> currentHull = getHull();
         plotFrame.add(new Plot(points, currentHull, minX, minY));
         plotFrame.getContentPane().validate();
